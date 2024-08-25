@@ -1,9 +1,9 @@
-import Greet from '../components/greet'
+import ChatModule from '@/components/modules/chat'
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <Greet />
+    <main className="flex flex-col items-center justify-between w-screen h-screen">
+      <ChatModule />
     </main>
   )
 }
