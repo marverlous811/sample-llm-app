@@ -14,9 +14,10 @@ import {
 } from '@chatscope/chat-ui-kit-react'
 import { useChatHook } from './chat.hook'
 import { useState } from 'react'
+import { TauriService } from '@/services'
 
 const ChatModule = () => {
-  const [messages, isThinking, send] = useChatHook()
+  const [messages, isThinking, send] = useChatHook(new TauriService())
   const [text, setText] = useState('')
   return (
     <>
@@ -26,8 +27,6 @@ const ChatModule = () => {
           <ConversationList></ConversationList>
         </Sidebar>
         <ChatContainer>
-          {/* <h1>????</h1>
-          <ChatBotConservation messages={messages} send={send} /> */}
           <MessageList
             typingIndicator={
               isThinking ? (
@@ -58,7 +57,6 @@ const ChatModule = () => {
             value={text}
             disabled={isThinking}
             onChange={(_innerHtml, content) => {
-              console.log(_innerHtml)
               setText(content)
             }}
             onSend={() => {

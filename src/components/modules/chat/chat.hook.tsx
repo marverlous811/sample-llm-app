@@ -1,17 +1,37 @@
 import { MessageContent } from '@/common'
-import { useState } from 'react'
+import { ChatBotEvent, ChatBotEventType, IChatBotService } from '@/services'
+import { useCallback, useEffect, useState } from 'react'
 
-export const useChatHook = () => {
+export const useChatHook = (service: IChatBotService) => {
   const [messages, setMessages] = useState<MessageContent[]>([])
   const [isThinking, setIsThinking] = useState(false)
 
-  const send = (payload: string) => {
-    const message: MessageContent = {
-      content: payload,
-      sender: 'user',
-      ts: Date.now(),
+  useEffect(() => {
+    let id = service.subcribe(onChatBotEvent)
+
+    return () => {
+      service.unSubcribe(id)
     }
-    setMessages((prev) => [...prev, message])
+  })
+
+  const onChatBotEvent = useCallback((event: ChatBotEvent) => {
+    switch (event.type) {
+      case ChatBotEventType.ON_MESSAGE:
+        setMessages((prev) => [...prev, event.payload])
+        setIsThinking(false)
+        break
+    }
+  }, [])
+
+  const send = async (payload: string) => {
+    if (isThinking) return
+    try {
+      const message = await service.sendMsg(payload)
+      setMessages((prev) => [...prev, message])
+      setIsThinking(true)
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return [messages, isThinking, send] as const
