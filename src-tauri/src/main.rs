@@ -3,11 +3,11 @@
 
 use std::{sync::Arc, time::Duration};
 
-use app::{Message, MessageSender, Storage};
+use app::{Message, MessageSender, OpenAICfg, OpenAIService, Storage};
 use tauri::{generate_context, Manager};
 
 enum Event {
-  Ask(u32, String),
+  Ask(u32, String, String),
 }
 
 #[derive(Clone)]
@@ -19,12 +19,13 @@ struct Controller {
 #[tauri::command]
 async fn send_message(
   _window: tauri::Window,
+  model: String,
   message: String,
   state: tauri::State<'_, Controller>,
 ) -> Result<Message, String> {
   log::info!("current window {}", _window.label());
   let msg = state.storage.new_message(message.clone(), MessageSender::User);
-  let _ = state.sender.send(Event::Ask(msg.id, message)).await;
+  let _ = state.sender.send(Event::Ask(msg.id, model, message)).await;
   Ok(msg)
 }
 
@@ -34,6 +35,14 @@ async fn main() {
     .filter_level(log::LevelFilter::Debug)
     .format_timestamp_millis()
     .init();
+
+  if std::env::var("OPENAI_API_BASE").is_err() {
+    std::env::set_var("OPENAI_API_BASE", "http://localhost:1234/v1");
+  }
+  let openai_service = Arc::new(OpenAIService::new(OpenAICfg {
+    api_key: "".to_string(),
+  }));
+  let openai_service2 = openai_service.clone();
 
   tauri::Builder::default()
     .setup(|app| {
@@ -49,10 +58,11 @@ async fn main() {
       tauri::async_runtime::spawn(async move {
         while let Some(event) = rx.recv().await {
           match event {
-            Event::Ask(_id, msg) => {
+            Event::Ask(_id, model, msg) => {
               log::info!("Received message: {}", msg);
-              std::thread::sleep(Duration::from_secs(2));
-              let msg = ctl2.storage.new_message(msg, MessageSender::Bot);
+              // std::thread::sleep(Duration::from_secs(2));
+              let answer = openai_service2.answer_sync(model, msg.clone()).await.unwrap();
+              let msg = ctl2.storage.new_message(answer, MessageSender::Bot);
               match window.emit("bot_answer", msg) {
                 Ok(_) => log::info!("Message sent to the window"),
                 Err(e) => log::error!("Error sending message to the window: {}", e),

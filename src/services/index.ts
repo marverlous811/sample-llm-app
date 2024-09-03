@@ -26,9 +26,9 @@ export class TauriService implements IChatBotService {
     appWindow.listen<MessageContent>('bot_answer', this.onBotAnswer)
   }
 
-  sendMsg = (msg: string): Promise<MessageContent> => {
+  sendMsg = (msg: string, model = 'lmstudio-community/Meta-Llama-3.1-8B-Instruct-GGUF/Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf'): Promise<MessageContent> => {
     return new Promise((resolve, reject) => {
-      invoke('send_message', { message: msg }).then(res => {
+      invoke('send_message', { message: msg, model }).then(res => {
         console.log("res", res)
         resolve(res as any)
       }).catch(err => {
